@@ -1,0 +1,79 @@
+name: Deploy to GitHub Pages
+
+# Run from main to preserve the github-pages environment's branch restrictions.
+# A single artifact contains production at / and preview at /develop/.
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: [Validate develop]
+    types: [completed]
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: iss-tracker-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' && github.ref_name == 'main') ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout production
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: production
+      - name: Checkout preview
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'develop' }}
+          path: preview
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build production or use initial placeholder
+        run: |
+          mkdir -p publish/develop
+          if [ -f production/package.json ]; then
+            cd production
+            npm install --no-audit --no-fund
+            npm run build:pages:main
+            cp -a dist/. ../publish/
+          else
+            cp production/index.html publish/index.html
+          fi
+      - name: Build preview
+        working-directory: preview
+        run: |
+          npm install --no-audit --no-fund
+          npm run build:pages:develop
+      - name: Combine sites
+        run: cp -a preview/dist/. publish/develop/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: publish
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
