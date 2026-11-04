@@ -337,8 +337,8 @@ const EarthGlobe = forwardRef<EarthGlobeHandle, EarthGlobeProps>(function EarthG
       outerRing.position.copy(satellite);
       ground.position.copy(surface);
       const positionArray = tetherGeometry.attributes.position;
-      positionArray.setXYZ(0, ...surface.toArray());
-      positionArray.setXYZ(1, ...satellite.toArray());
+      positionArray.setXYZ(0, surface.x, surface.y, surface.z);
+      positionArray.setXYZ(1, satellite.x, satellite.y, satellite.z);
       positionArray.needsUpdate = true;
       marker.visible = outerRing.visible = ground.visible = tether.visible = true;
     }
