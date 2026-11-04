@@ -1,0 +1,28 @@
+{
+  "name": "iss-tracker",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "build:pages:main": "tsc --noEmit && vite build --base=/iss-tracker/",
+    "build:pages:develop": "tsc --noEmit && vite build --base=/iss-tracker/develop/"
+  },
+  "dependencies": {
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "three": "0.187.0",
+    "satellite.js": "6.0.2"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "@types/three": "^0.180.0",
+    "@vitejs/plugin-react": "5.2.0",
+    "typescript": "5.8.3",
+    "vite": "7.1.9"
+  }
+}
