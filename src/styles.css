@@ -118,14 +118,13 @@ button:disabled { opacity: .4; cursor: not-allowed; }
   z-index: 3;
   align-items: center;
   gap: 8px;
-  transform: translate(14px, -28px);
+  transform: translate(12px, -26px);
   color: #ffe1bd;
   font-size: 12px;
   letter-spacing: .16em;
   font-weight: 750;
   filter: drop-shadow(0 2px 6px #020812);
 }
-.iss-marker-core { width: 7px; height: 7px; background: #ffc17a; border-radius: 50%; box-shadow: 0 0 11px #ffb86c; }
 .orbit-legend {
   position: absolute;
   z-index: 2;

@@ -28,7 +28,8 @@ function Detail({ label, value }: { label: string; value: string }) {
 export default function App() {
   const globeRef = useRef<EarthGlobeHandle>(null);
   const [now, setNow] = useState(() => Date.now());
-  const [autoRotate, setAutoRotate] = useState(true);
+  const [autoRotate, setAutoRotate] = useState(false);
+  const [focusEnabled, setFocusEnabled] = useState(true);
   const [showOrbit, setShowOrbit] = useState(true);
   const [ready, setReady] = useState(false);
   const [globeError, setGlobeError] = useState<string | null>(null);
@@ -56,9 +57,14 @@ export default function App() {
     setGlobeError(message);
     setReady(false);
   }, []);
-  const focusIss = () => {
-    if (!position) return;
+  const handleManualInteraction = useCallback(() => setFocusEnabled(false), []);
+  const toggleFocusIss = () => {
+    if (focusEnabled) {
+      setFocusEnabled(false);
+      return;
+    }
     setAutoRotate(false);
+    setFocusEnabled(true);
     globeRef.current?.focusIss();
   };
 
@@ -89,6 +95,8 @@ export default function App() {
             livePosition={position}
             track={track}
             autoRotate={autoRotate}
+            focusEnabled={focusEnabled}
+            onManualInteraction={handleManualInteraction}
             showOrbit={showOrbit}
             onReady={handleReady}
             onError={handleGlobeError}
@@ -109,15 +117,24 @@ export default function App() {
             className={`rotation-toggle ${autoRotate ? 'active' : ''}`}
             aria-pressed={autoRotate}
             disabled={!ready}
-            onClick={() => setAutoRotate(previous => !previous)}
+            onClick={() => {
+              setAutoRotate(previous => !previous);
+              setFocusEnabled(false);
+            }}
           >
             <span><span className="rotation-icon">{autoRotate ? 'Ⅱ' : '▶'}</span> AUTO ROTATE</span>
             <span className="toggle-track"><span /></span>
           </button>
 
           <div className="action-row">
-            <button type="button" className="action-button" onClick={focusIss} disabled={!position || !ready}>
-              ◎ FOCUS ISS
+            <button
+              type="button"
+              className={`action-button ${focusEnabled ? 'selected' : ''}`}
+              aria-pressed={focusEnabled}
+              onClick={toggleFocusIss}
+              disabled={!position || !ready}
+            >
+              {focusEnabled ? '◉' : '○'} FOCUS ISS
             </button>
             <button
               type="button"

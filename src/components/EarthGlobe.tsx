@@ -13,6 +13,8 @@ interface EarthGlobeProps {
   livePosition: IssPosition | null;
   track: { past: GeoPosition[]; future: GeoPosition[] } | null;
   autoRotate: boolean;
+  focusEnabled: boolean;
+  onManualInteraction(): void;
   showOrbit: boolean;
   onReady(): void;
   onError(message: string): void;
@@ -137,7 +139,8 @@ function makeOrbitLine(points: GeoPosition[], color: number): THREE.Line | null 
 }
 
 const EarthGlobe = forwardRef<EarthGlobeHandle, EarthGlobeProps>(function EarthGlobe({
-  model, livePosition, track, autoRotate, showOrbit, onReady, onError,
+  model, livePosition, track, autoRotate, focusEnabled, onManualInteraction,
+  showOrbit, onReady, onError,
 }, ref) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const markerLabelRef = useRef<HTMLDivElement>(null);
@@ -147,10 +150,15 @@ const EarthGlobe = forwardRef<EarthGlobeHandle, EarthGlobeProps>(function EarthG
   const positionRef = useRef(livePosition);
   const lastGeoRef = useRef<GeoPosition | null>(null);
   const focusRef = useRef<CameraTransition | null>(null);
+  const focusEnabledRef = useRef(focusEnabled);
   const orbitGroupRef = useRef<THREE.Group | null>(null);
 
   useEffect(() => { modelRef.current = model; }, [model]);
   useEffect(() => { positionRef.current = livePosition; }, [livePosition]);
+  useEffect(() => {
+    focusEnabledRef.current = focusEnabled;
+    if (!focusEnabled) focusRef.current = null;
+  }, [focusEnabled]);
 
   useImperativeHandle(ref, () => ({
     focusIss() {
@@ -248,6 +256,10 @@ const EarthGlobe = forwardRef<EarthGlobeHandle, EarthGlobeProps>(function EarthG
     const onControlStart = () => {
       focusRef.current = null;
       userInteracted = true;
+      if (focusEnabledRef.current) {
+        focusEnabledRef.current = false;
+        onManualInteraction();
+      }
     };
     controls.addEventListener('start', onControlStart);
 
@@ -355,7 +367,7 @@ const EarthGlobe = forwardRef<EarthGlobeHandle, EarthGlobeProps>(function EarthG
         if (geo) {
           lastGeoRef.current = geo;
           showMarker(geo);
-          if (!initialFocusSet && !userInteracted) {
+          if (!initialFocusSet && !userInteracted && focusEnabledRef.current) {
             camera.position.copy(toVector(geo).normalize().multiplyScalar(camera.position.length()));
             controls.update();
             initialFocusSet = true;
@@ -375,6 +387,17 @@ const EarthGlobe = forwardRef<EarthGlobeHandle, EarthGlobeProps>(function EarthG
         if (progress >= 1) focusRef.current = null;
       }
       controls.update();
+
+      // Follow the moving ISS after the initial centering or focus transition.
+      // Keep the camera at its existing zoom distance and follow smoothly in 3D.
+      if (focusEnabledRef.current && lastGeoRef.current && !focusRef.current) {
+        const from = camera.position.clone().normalize();
+        const target = toVector(lastGeoRef.current).normalize();
+        const delta = new THREE.Quaternion().setFromUnitVectors(from, target);
+        const step = new THREE.Quaternion().identity().slerp(delta, 0.12);
+        camera.position.applyQuaternion(step);
+        controls.update();
+      }
 
       if (marker.visible) {
         outerRing.quaternion.copy(camera.quaternion);
@@ -429,12 +452,12 @@ const EarthGlobe = forwardRef<EarthGlobeHandle, EarthGlobeProps>(function EarthG
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [onReady, onError]);
+  }, [onReady, onError, onManualInteraction]);
 
   return <div className="globe-wrap">
     <div ref={viewportRef} className="globe-viewport" />
     <div ref={markerLabelRef} className="iss-marker-label" style={{ display: 'none' }}>
-      <span className="iss-marker-core" /><span className="iss-marker-text">ISS</span>
+      <span className="iss-marker-text">ISS</span>
     </div>
   </div>;
 });
