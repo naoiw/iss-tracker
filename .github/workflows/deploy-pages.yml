@@ -41,7 +41,8 @@ jobs:
           path: preview
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 26
+          check-latest: true
       - name: Build production or use initial placeholder
         run: |
           mkdir -p publish/develop

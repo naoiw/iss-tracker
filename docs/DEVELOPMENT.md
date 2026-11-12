@@ -2,7 +2,7 @@
 
 ## 開発
 
-Node.js 22を使用。`npm install` → `npm test` → `npm run build`。
+Node.js 26を使用。`npm install` → `npm test` → `npm run build`。
 
 `develop` ブランチを開発環境、`main` を本番環境として運用します。GitHub Pagesには1つのサイトをデプロイし、`/develop/` に開発版を含めます。
 
